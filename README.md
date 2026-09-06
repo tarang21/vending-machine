@@ -1,4 +1,4 @@
-# Vending Machine (Go)
+# Vending Machine
 
 A small vending machine in Go using the **state design pattern**.
 
@@ -53,13 +53,5 @@ With states:
 - Illegal operations stay in the **wrong** state as no-ops or messages, so you cannot dispense before paying
 
 That is the point of the pattern: **behavior changes with internal state**, without the caller knowing which struct is current.
-
-## Run
-
-From this folder (needs a `go.mod` — `go mod init github.com/<you>/vending-machine` if missing):
-
-```bash
-go run .
-```
 
 `main.go` runs a few scenarios: enough money, too little money, exact amount, and empty stock.
