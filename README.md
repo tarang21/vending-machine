@@ -1,4 +1,4 @@
-# Vending Machine (Go)
+# Vending Machine
 
 A small vending machine in Go using the **state design pattern**.
 
@@ -20,9 +20,13 @@ A small vending machine in Go using the **state design pattern**.
 
 ### States
 
+Each of these structs **implements the `State` interface** (all four methods: `insertMoney`, `selectProduct`, `dispensedProduct`, `returnChange`). If even one method is missing, Go will not let you assign it to `VendingMachine.State`.
+
 - **MoneyInsertedState** — accept cash, then move to selection
 - **ProductSelectionState** — pick a product if there is enough money and stock
 - **ProductDispensedState** — vend the item and return change
+
+Actions that do not apply in that state still need a method (print a message). That is how every state stays “linked” to the same interface.
 
 `VendingMachine` forwards each call to whatever `State` is current:
 
@@ -43,8 +47,9 @@ main  →  VendingMachine  →  State (interface)
 ```
 
 - `main` only talks to `VendingMachine`
-- The machine holds **one** current state
-- That state runs the method, then may call `updateState` to switch
+- The machine holds **one** current `State`
+- **Every** concrete state implements the same `State` interface, so any of them can sit in that field
+- The current state runs the method, then may call `updateState` to switch
 
 Typical path: insert money → select product → dispense → return change → insert money again.
 
@@ -69,13 +74,3 @@ With states:
 - Illegal operations stay in the **wrong** state as no-ops or messages, so you cannot dispense before paying
 
 That is the point of the pattern: **behavior changes with internal state**, without the caller knowing which struct is current.
-
-## Run
-
-From this folder (needs a `go.mod` — `go mod init github.com/<you>/vending-machine` if missing):
-
-```bash
-go run .
-```
-
-`main.go` runs a few scenarios: enough money, too little money, exact amount, and empty stock.
