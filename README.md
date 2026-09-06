@@ -24,22 +24,7 @@ A small vending machine in Go using the **state design pattern**.
 - **ProductSelectionState** — pick a product if there is enough money and stock
 - **ProductDispensedState** — vend the item and return change
 
-## Flow (quick revision)
-
-Starts in **MoneyInsertedState**.
-
-```mermaid
-stateDiagram-v2
-    [*] --> MoneyInserted
-    MoneyInserted --> ProductSelection: insertMoney
-    ProductSelection --> ProductDispensed: selectProduct\n(enough money + stock)
-    ProductSelection --> MoneyInserted: selectProduct\n(too little money or sold out)\nrefund all
-    ProductDispensed --> MoneyInserted: dispensedProduct\nthen returnChange
-```
-
-Happy path: insert money → select product → dispense → change → back to insert money.
-
-`VendingMachine` does not `switch` on “which step we are in.” It **delegates** to the current `State`:
+`VendingMachine` forwards each call to whatever `State` is current:
 
 ```go
 func (vm *VendingMachine) insertMoney(amount int) {
@@ -47,25 +32,23 @@ func (vm *VendingMachine) insertMoney(amount int) {
 }
 ```
 
-Each state implements the same methods. Valid actions do the work and call `updateState(...)`. Invalid actions print a message (e.g. select product before inserting money).
-
 ## Mental model (state pattern)
 
-Caller never talks to a concrete state. The machine holds **one** `State` and forwards every action. The current state may swap itself out via `updateState`.
-
-```mermaid
-flowchart TB
-    Caller -->|"insertMoney / selectProduct / dispensedProduct / returnChange"| VM[VendingMachine]
-    VM -->|"vm.State.theAction(...)"| I[State interface]
-    I --- M[MoneyInsertedState]
-    I --- P[ProductSelectionState]
-    I --- D[ProductDispensedState]
-    M -->|"updateState(next)"| VM
-    P -->|"updateState(next)"| VM
-    D -->|"updateState(next)"| VM
+```
+main  →  VendingMachine  →  State (interface)
+                                │
+                    ┌───────────┼───────────┐
+                    ▼           ▼           ▼
+            MoneyInserted  Selection  Dispensed
 ```
 
-Only one of M / P / D is current at a time. Same call from `main`, different struct runs.
+- `main` only talks to `VendingMachine`
+- The machine holds **one** current state
+- That state runs the method, then may call `updateState` to switch
+
+Typical path: insert money → select product → dispense → return change → insert money again.
+
+Wrong action in a state: print a message, stay put (or refund and go back).
 
 ## Why the state pattern helps here
 
@@ -86,5 +69,13 @@ With states:
 - Illegal operations stay in the **wrong** state as no-ops or messages, so you cannot dispense before paying
 
 That is the point of the pattern: **behavior changes with internal state**, without the caller knowing which struct is current.
+
+## Run
+
+From this folder (needs a `go.mod` — `go mod init github.com/<you>/vending-machine` if missing):
+
+```bash
+go run .
+```
 
 `main.go` runs a few scenarios: enough money, too little money, exact amount, and empty stock.
